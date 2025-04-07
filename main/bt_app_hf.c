@@ -174,7 +174,7 @@ extern esp_bd_addr_t peer_addr;
 // esp_bd_addr_t peer_addr = {0xac, 0x67, 0xb2, 0x53, 0x77, 0xbe};
 
 #if CONFIG_BT_HFP_AUDIO_DATA_PATH_HCI
-#define ESP_HFP_RINGBUF_SIZE 16384    // Adjustel;d buffer size to manage memory and performance
+#define ESP_HFP_RINGBUF_SIZE (64 * 1024)    // Adjustel;d buffer size to manage memory and performance
 static RingbufHandle_t m_rb = NULL;
 #endif
 
@@ -196,25 +196,36 @@ static TaskHandle_t s_mic_task_handle = NULL;
 static void inmp441_reader_task(void *arg)
 {
     size_t bytes_read;
-    const size_t frame_size = 160;
+    const size_t frame_size = 512;
     uint8_t i2s_buffer[frame_size];
 
     while (1) {
-        // Read audio data from I2S microphone
         if (i2s_read(I2S_NUM_0, i2s_buffer, frame_size, &bytes_read, portMAX_DELAY) == ESP_OK && bytes_read > 0) {
-            // Try to send audio data to the ring buffer
-            if (xRingbufferSend(m_rb, i2s_buffer, bytes_read, pdMS_TO_TICKS(100)) != pdTRUE) {
-                ESP_LOGW("MIC", "Ring buffer full, dropping audio");
+            if (xRingbufferSend(m_rb, i2s_buffer, bytes_read, pdMS_TO_TICKS(10)) != pdTRUE) {
+                size_t tmp_size;
+                uint8_t *old = (uint8_t *)xRingbufferReceiveUpTo(m_rb, &tmp_size, 0, bytes_read);
+                if (old) {
+                    vRingbufferReturnItem(m_rb, old);  // Return the old item to prevent overflow
+                    if (xRingbufferSend(m_rb, i2s_buffer, bytes_read, pdMS_TO_TICKS(10)) != pdTRUE) {
+                        ESP_LOGW("MIC", "Dropped audio, buffer still full after eviction");
+                    }
+                } else {
+                    ESP_LOGW("MIC", "Dropped audio, no items to evict");
+                }
             }
+            esp_hf_client_outgoing_data_ready();  // Always notify after writing data
         }
     }
 }
+
+
 static void start_mic_reader_task(void)
 {
     if (s_mic_task_handle == NULL) {
-        xTaskCreatePinnedToCore(inmp441_reader_task, "inmp441_mic_task", 4096, NULL, 5, &s_mic_task_handle, 1);
+        xTaskCreatePinnedToCore(inmp441_reader_task, "inmp441_mic_task", 4096, NULL, 3, &s_mic_task_handle, 1);  // Lower prio, core 1
     }
 }
+
 static void stop_mic_reader_task(void)
 {
     if (s_mic_task_handle != NULL) {
@@ -225,19 +236,23 @@ static void stop_mic_reader_task(void)
 
 uint32_t bt_app_hf_client_outgoing_cb(uint8_t *p_buf, uint32_t sz)
 {
+    static uint32_t call_count = 0;
+    call_count++;
+    ESP_LOGV("HFP_OUT", "[%lu] Requesting %lu bytes", call_count, sz);
+
     size_t item_size;
     uint8_t *data = (uint8_t *)xRingbufferReceiveUpTo(m_rb, &item_size, 0, sz);
-
-    if (data == NULL) {
-        memset(p_buf, 0, sz);  // Silence if no data available
-        return sz;
-    }
-
-    memcpy(p_buf, data, item_size);
-    vRingbufferReturnItem(m_rb, data);
-
-    return item_size;
+if (!data) {
+    // Handle case where no data is available (return silence)
+    ESP_LOGW("HFP_OUT", "No data available for outgoing buffer, sending silence");
+    memset(p_buf, 0, sz);  // Return silence
+    return sz;
 }
+memcpy(p_buf, data, item_size);
+vRingbufferReturnItem(m_rb, data);
+return item_size;
+}
+
 static void bt_app_hf_client_incoming_cb(const uint8_t *buf, uint32_t sz)
 {
     if (!m_rb) {
