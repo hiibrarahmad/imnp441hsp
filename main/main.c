@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2021-2024 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
- */
-
  #include <stdio.h>
  #include <stdlib.h>
  #include <unistd.h>
@@ -25,7 +19,6 @@
  #include "esp_console.h"
  #include "app_hf_msg_set.h"
  #include "driver/i2s.h"
- 
  // INMP441 I2S configuration
  #define I2S_MIC_SAMPLE_RATE     (16000)
  #define I2S_MIC_PORT            (I2S_NUM_0)
@@ -33,7 +26,6 @@
  #define I2S_MIC_SCK_PIN         (21)
  #define I2S_MIC_WS_PIN          (22)
  #define I2S_MIC_BUFFER_SIZE     (1024)
- 
  //static const char *BT_HF_TAG = "BT_HF";
  
  esp_bd_addr_t peer_addr = {0};

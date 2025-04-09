@@ -282,6 +282,7 @@ void bt_app_hf_client_cb(esp_hf_client_cb_event_t event, esp_hf_client_cb_param_
             ESP_LOGI(BT_HF_TAG, "--connection state %s", c_connection_state_str[param->conn_stat.state]);
             memcpy(peer_addr, param->conn_stat.remote_bda, ESP_BD_ADDR_LEN);
             break;
+        
 
         case ESP_HF_CLIENT_AUDIO_STATE_EVT:
             ESP_LOGI(BT_HF_TAG, "--audio state %s", c_audio_state_str[param->audio_stat.state]);
@@ -299,9 +300,99 @@ void bt_app_hf_client_cb(esp_hf_client_cb_event_t event, esp_hf_client_cb_param_
             #endif
             break;
 
-        // Handle other events as necessary...
+            case ESP_HF_CLIENT_BVRA_RESP_EVT:
+            ESP_LOGI(BT_HF_TAG, "--VR state: %s", c_vr_state_str[param->bvra_rep.value]);
+            break;
+
+        case ESP_HF_CLIENT_CIND_CALL_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Call status: %s", c_call_str[param->call_ind.status]);
+            break;
+
+        case ESP_HF_CLIENT_CIND_CALL_SETUP_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Call setup: %s", c_call_setup_str[param->call_setup_ind.status]);
+            break;
+
+        case ESP_HF_CLIENT_CIND_CALL_HELD_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Call held: %s", c_call_held_str[param->call_held_ind.status]);
+            break;
+
+        case ESP_HF_CLIENT_COPS_CURRENT_OPERATOR_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Operator: %s", param->cops_rep.name);
+            break;
+
+        case ESP_HF_CLIENT_CIND_SERVICE_AVAILABILITY_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Service availability: %s", 
+                   c_service_availability_status_str[param->service_availability_ind.status]);
+            break;
+
+        case ESP_HF_CLIENT_CIND_SIGNAL_STRENGTH_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Signal strength: %d/5", param->signal_strength_ind.value);
+            break;
+
+        case ESP_HF_CLIENT_CIND_ROAMING_STATUS_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Roaming: %s", c_roaming_status_str[param->roaming_ind.status]);
+            break;
+
+        case ESP_HF_CLIENT_CIND_BATTERY_LEVEL_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Battery level: %d%%", param->battery_level_ind.value);
+            break;
+
+        case ESP_HF_CLIENT_CLIP_EVT:
+            ESP_LOGI(BT_HF_TAG, "--CLIP number: %s", param->clip_ind.number);
+            break;
+
+        case ESP_HF_CLIENT_CCWA_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Call waiting number: %s", param->ccwa_ind.number);
+            break;
+
+        case ESP_HF_CLIENT_CLCC_EVT:
+            ESP_LOGI(BT_HF_TAG, "--CLCC: idx=%d dir=%s state=%s mpty=%s number=%s",
+                   param->clcc_ind.idx,
+                   c_call_dir_str[param->clcc_ind.dir],
+                   c_call_state_str[param->clcc_ind.status],
+                   c_call_mpty_type_str[param->clcc_ind.mpty],
+                   param->clcc_ind.number);
+            break;
+
+        case ESP_HF_CLIENT_VOLUME_CONTROL_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Volume control: %s, value: %d",
+                   c_volume_control_target_str[param->volume_control.type],
+                   param->volume_control.volume);
+            break;
+
+        case ESP_HF_CLIENT_AT_RESPONSE_EVT:
+            ESP_LOGI(BT_HF_TAG, "--AT Response: code=%s",
+                   c_at_response_code_str[param->at_response.code]);
+            break;
+
+        case ESP_HF_CLIENT_CNUM_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Subscriber info: number=%s",
+                   param->cnum_rep.number);
+            break;
+
+        case ESP_HF_CLIENT_BTRH_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Response and hold: %s", 
+                   c_resp_and_hold_str[param->btrh_rep.status]);
+            break;
+
+        case ESP_HF_CLIENT_BINP_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Last voice tag number: %s", param->binp_rep.number);
+            break;
+
+        case ESP_HF_CLIENT_RING_IND_EVT:
+            ESP_LOGI(BT_HF_TAG, "--RING indication");
+            break;
+
+        case ESP_HF_CLIENT_PKT_STAT_NUMS_GET_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Packet status: num=%d", param->pkt_stat_nums_rep.num);
+            break;
+
+        case ESP_HF_CLIENT_PROF_STATE_EVT:
+            ESP_LOGI(BT_HF_TAG, "--Profile state: init=%d", param->prof_stat.init);
+            break;
+
         default:
-            ESP_LOGE(BT_HF_TAG, "Unknown event %d", event);
+            ESP_LOGW(BT_HF_TAG, "Unhandled event: %d", event);
             break;
     }
-}
+}   

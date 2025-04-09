@@ -8,5 +8,8 @@
     ],
     "idf.toolsPathWin": "C:\\Users\\MASTER\\.espressif",
     "idf.flashType": "UART",
-    "idf.portWin": "COM8"
+    "idf.portWin": "COM14",
+    "files.associations": {
+        "esp_gap_bt_api.h": "c"
+    }
 }
